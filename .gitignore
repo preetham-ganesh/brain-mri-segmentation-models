@@ -1,0 +1,4 @@
+.DS_Store
+raw_data/
+extracted_data/
+__pycache__/
