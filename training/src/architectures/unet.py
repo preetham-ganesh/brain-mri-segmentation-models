@@ -159,3 +159,30 @@ class UNet(tf.keras.Model):
             else:
                 x = self.model_layers[name](x)
         return [x]
+
+    def build_graph(self) -> tf.keras.Model:
+        """Builds plottable graph for the model.
+
+        Builds plottable graph for the model.
+
+        Args:
+            None.
+
+        Returns:
+            A tensorflow model based on the model configuration.
+        """
+        # Creates the input layer using the model configuration.
+        inputs = [
+            tf.keras.layers.Input(
+                shape=(
+                    self.model_configuration["model"]["final_image_height"],
+                    self.model_configuration["model"]["final_image_width"],
+                    self.model_configuration["model"]["n_channels"],
+                )
+            )
+        ]
+
+        # Creates an object for the tensorflow model and returns it.
+        return tf.keras.Model(
+            inputs=inputs, outputs=self.call(inputs, training=False, masks=None)
+        )
