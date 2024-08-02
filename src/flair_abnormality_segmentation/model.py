@@ -99,3 +99,64 @@ class UNet(tf.keras.Model):
                 self.model_layers[name] = tf.keras.layers.Concatenate(
                     axis=config["axis"]
                 )
+
+    def call(
+        self,
+        inputs: List[tf.Tensor],
+        training: bool = False,
+        masks: List[tf.Tensor] = None,
+    ) -> List[tf.Tensor]:
+        """Inputs & masks tensors are passed through the layers in the model.
+
+        Inputs & masks tensors are passed through the layers in the model.
+
+        Args:
+            inputs: A list of tensors for inputs to the model.
+            training: A boolean value for the flag whether model is in 'train' or 'predict' mode.
+            masks: A list of tensors for masks to the model.
+
+        Returns:
+            A tensor for the output predicted by the model.
+        """
+        x = inputs[0]
+
+        # If the first layer is mobilenet, then the features are extracted.
+        if self.model_configuration["model"]["layers"]["arrangement"][0] == "mobilenet":
+            mobilenet_output_names = self.model_configuration["model"]["layers"][
+                "configuration"
+            ]["mobilenet"]["output_layer"]
+            mobilenet_outputs = self.model_layers["mobilenet"](x, training=training)
+            x = mobilenet_outputs[0]
+            mobilenet_outputs = {
+                name: output
+                for name, output in zip(
+                    mobilenet_output_names[1:], mobilenet_outputs[1:]
+                )
+            }
+
+        # Iterates across the layers arrangement, and predicts the output for each layer.
+        for name in self.model_configuration["model"]["layers"]["arrangement"][1:]:
+            # If layer's name is like 'dropout_' or 'batchnorm_' or 'mobilenet_', the following output is predicted.
+            if name.startswith("dropout") or name.startswith("batchnorm"):
+                x = self.model_layers[name](x, training=training)
+
+            # If layer's name is like 'concat_', the following output is predicted.
+            elif name.startswith("concat"):
+                input_name = self.model_configuration["model"]["layers"][
+                    "configuration"
+                ][name]["input"][0]
+
+                # If the pretrained flag is true, then the skipped connection layer is imported from pretrained model.
+                if self.model_configuration["model"]["layers"]["configuration"][name][
+                    "pretrained"
+                ]:
+                    x = self.model_layers[name]([x, mobilenet_outputs[input_name]])
+
+                # Else, skipped connection layer from current model is imported.
+                else:
+                    x = self.model_layers[name]([x, self.model_layers[input_name]])
+
+            # Else, the following output is predicted.
+            else:
+                x = self.model_layers[name](x)
+        return [x]
