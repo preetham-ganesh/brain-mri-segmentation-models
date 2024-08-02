@@ -46,7 +46,6 @@ class UNet(tf.keras.Model):
 
                 # Filters the model based on output & input layer. Sets the trainable flag based on model configuration.
                 output_layer_names = config["output_layer"]
-                mobilenet.layers[0]._name = "input_image"
                 mobilenet_outputs = [
                     mobilenet.get_layer(name).output for name in output_layer_names
                 ]
@@ -136,7 +135,7 @@ class UNet(tf.keras.Model):
 
         # Iterates across the layers arrangement, and predicts the output for each layer.
         for name in self.model_configuration["model"]["layers"]["arrangement"][1:]:
-            # If layer's name is like 'dropout_' or 'batchnorm_' or 'mobilenet_', the following output is predicted.
+            # If layer's name is like 'dropout_' or 'batchnorm_', the following output is predicted.
             if name.startswith("dropout") or name.startswith("batchnorm"):
                 x = self.model_layers[name](x, training=training)
 
