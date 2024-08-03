@@ -2,6 +2,8 @@ import os
 import zipfile
 import sys
 
+import skimage.transform
+
 
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_PATH)
@@ -15,7 +17,7 @@ import numpy as np
 
 from src.utils import check_directory_path_existence
 
-from typing import Dict, Any
+from typing import Dict, List, Any
 
 
 class Dataset(object):
@@ -131,8 +133,8 @@ class Dataset(object):
                 if os.path.isfile(image_file_path) and os.path.isfile(mask_file_path):
                     self.file_paths.append(
                         {
-                            "image_file_path": image_file_path,
-                            "mask_file_path": mask_file_path,
+                            "image_file_paths": image_file_path,
+                            "mask_file_paths": mask_file_path,
                         }
                     )
                 image_id += 1
@@ -196,20 +198,20 @@ class Dataset(object):
         # Zips images & annotations file paths into single tensor, and shuffles it.
         self.train_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(train_file_paths["image_file_path"]),
-                list(train_file_paths["mask_file_path"]),
+                list(train_file_paths["image_file_paths"]),
+                list(train_file_paths["mask_file_paths"]),
             )
         ).shuffle(len(train_file_paths))
         self.validation_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(validation_file_paths["image_file_path"]),
-                list(validation_file_paths["mask_file_path"]),
+                list(validation_file_paths["image_file_paths"]),
+                list(validation_file_paths["mask_file_paths"]),
             )
         ).shuffle(len(validation_file_paths))
         self.test_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(self.test_file_paths["image_file_path"]),
-                list(self.test_file_paths["mask_file_path"]),
+                list(self.test_file_paths["image_file_paths"]),
+                list(self.test_file_paths["mask_file_paths"]),
             )
         ).shuffle(len(self.test_file_paths))
 
@@ -254,7 +256,70 @@ class Dataset(object):
         image = skimage.io.imread(image_file_path)
         return image
 
+    def resize_image(self, image: np.ndarray) -> np.ndarray:
+        """Resizes image based on model configuration.
 
-dataset = Dataset({})
-dataset.extract_data_from_zip_file()
-dataset.load_dataset_file_paths()
+        Resizes image to (final_image_height, final_image_width, n_channels) shape.
+
+        Args:
+            image: A NumPy array for the image.
+
+        Returns:
+            A NumPy array for the resized version of the image.
+        """
+        # Checks type & values of arguments.
+        assert isinstance(
+            image, np.ndarray
+        ), "Variable image should be of type 'numpy.ndarray'."
+
+        # Resizes image to (final_image_height, final_image_width, n_channels). n_channels = 1 for mask & for input.
+        resized_image = skimage.transform.resize(
+            image,
+            output_shape=(
+                self.model_configuration["model"]["final_image_height"],
+                self.model_configuration["model"]["final_image_width"],
+            ),
+        )
+        return resized_image
+
+    def load_input_target_images(
+        self, image_file_paths: List[str], mask_file_paths: List[str]
+    ):
+        """"""
+        # Checks types & values of arguments.
+        assert isinstance(
+            image_file_paths, list
+        ), "Variable images_file_paths should be of type 'list'."
+        assert isinstance(
+            mask_file_paths, list
+        ), "Variable mask_file_paths should be of type 'str'."
+
+        # Zero array for input batch of shape (batch, height, width, 3), & target batch of shape (batch, height, width).
+        input_batch = np.zeros(
+            shape=(
+                len(image_file_paths),
+                self.model_configuration["model"]["final_image_height"],
+                self.model_configuration["model"]["final_image_width"],
+                self.model_configuration["model"]["n_channels"],
+            ),
+            dtype=np.float32,
+        )
+        target_batch = np.zeros(
+            shape=(
+                len(image_file_paths),
+                self.model_configuration["model"]["final_image_height"],
+                self.model_configuration["model"]["final_image_width"],
+            )
+        )
+
+        # Iterates across images & annotations file paths in current batch.
+        for index in range(len(image_file_paths)):
+            # Loads the image for the current image path.
+            input_image = self.load_image(str(image_file_paths[index], "UTF-8"))
+            image_file_path = str(images_file_paths[index], "UTF-8")
+            annotation_file_path = str(annotations_file_paths[index], "UTF-8")
+
+            # Loads input and target images for the current index image & annotation file paths.
+            input_image, target_image = self.load_input_target_images(
+                image_file_path, annotation_file_path
+            )
