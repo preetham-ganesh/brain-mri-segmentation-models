@@ -229,3 +229,31 @@ class Train(object):
         return (2.0 * intersection + smooth) / (
             tf.reduce_sum(target_batch) + tf.reduce_sum(predicted_batch) + smooth
         )
+
+    def compute_intersection_over_union(
+        self, target_batch: tf.Tensor, predicted_batch: tf.Tensor
+    ) -> tf.Tensor:
+        """Computes IoU for the current batch using actual & predicted values.
+
+        Computes IoU for the current batch using actual & predicted values.
+
+        Args:
+            target_batch: A tensor for target batch of generated mask images.
+            predicted_batch: A tensor for batch of outputs predicted by the model for input batch.
+
+        Returns:
+            A tensor for the IoU computed on comparing target & predicted batch.
+        """
+        # Flattens the target and predicted batches.
+        target_batch = tf.keras.layers.Flatten()(target_batch)
+        predicted_batch = tf.keras.layers.Flatten()(predicted_batch)
+
+        # Computes intersection & union for the target and predicted batch.
+        intersection = tf.reduce_sum(target_batch * predicted_batch)
+        union = (
+            tf.reduce_sum(target_batch) + tf.reduce_sum(predicted_batch) - intersection
+        )
+        # Computes Intersection over Union metric.
+        smooth = 1e-15
+        iou = (intersection + smooth) / (union + smooth)
+        return iou
