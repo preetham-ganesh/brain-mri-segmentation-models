@@ -10,6 +10,8 @@ sys.path.append(BASE_PATH)
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 import tensorflow as tf
+import skimage
+import numpy as np
 
 from src.utils import check_directory_path_existence
 
@@ -183,6 +185,14 @@ class Dataset(object):
         Returns:
             None.
         """
+        # Checks type & values of arguments.
+        assert isinstance(
+            train_file_paths, pd.DataFrame
+        ), "Variable train_file_paths should be of type 'pd.DataFrame'."
+        assert isinstance(
+            validation_file_paths, pd.DataFrame
+        ), "Variable validation_file_paths should be of type 'pd.DataFrame'."
+
         # Zips images & annotations file paths into single tensor, and shuffles it.
         self.train_dataset = tf.data.Dataset.from_tensor_slices(
             (
@@ -223,6 +233,26 @@ class Dataset(object):
         )
         print("No. of test steps per epoch: {}".format(self.n_test_steps_per_epoch))
         print("")
+
+    def load_image(self, image_file_path: str) -> np.ndarray:
+        """Loads the image for the current image path.
+
+        Loads the image for the current image path.
+
+        Args:
+            image_file_path: A string for the location where the image is located.
+
+        Returns:
+            A NumPy array for the image loaded from the file path.
+        """
+        # Checks type & values of arguments.
+        assert isinstance(
+            image_file_path, str
+        ), "Variable image_file_path should be of type 'str'."
+
+        # Loads the image for the current image path.
+        image = skimage.io.imread(image_file_path)
+        return image
 
 
 dataset = Dataset({})
