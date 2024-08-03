@@ -204,3 +204,28 @@ class Train(object):
         loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=False)
         current_loss = loss_object(target_batch, predicted_batch)
         return current_loss
+
+    def compute_dice_coefficient(
+        self, target_batch: tf.Tensor, predicted_batch: tf.Tensor
+    ) -> tf.Tensor:
+        """Computes dice coefficient for the current batch using actual & predicted values.
+
+        Computes dice coefficient for the current batch using actual & predicted values.
+
+        Args:
+            target_batch: A tensor for target batch of generated mask images.
+            predicted_batch: A tensor for batch of outputs predicted by the model for input batch.
+
+        Returns:
+            A tensor for the dice coefficient computed on comparing target & predicted batch.
+        """
+        # Flattens the target and predicted batches.
+        target_batch = tf.keras.layers.Flatten()(target_batch)
+        predicted_batch = tf.keras.layers.Flatten()(predicted_batch)
+
+        # Computes the intersection between the flattened target and predicted batches.
+        intersection = tf.reduce_sum(target_batch * predicted_batch)
+        smooth = 1e-15
+        return (2.0 * intersection + smooth) / (
+            tf.reduce_sum(target_batch) + tf.reduce_sum(predicted_batch) + smooth
+        )
