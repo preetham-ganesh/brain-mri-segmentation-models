@@ -1,7 +1,10 @@
 import os
 
+import tensorflow as tf
+
 from src.utils import load_json_file
 from src.flair_abnormality_segmentation.dataset import Dataset
+from src.flair_abnormality_segmentation.model import UNet
 
 
 class Train(object):
@@ -68,3 +71,43 @@ class Train(object):
 
         # Splits dataset into train & test data splits. Creates object for KFold cross validation.
         self.dataset.split_dataset()
+
+    def load_model(self, mode: str) -> None:
+        """Loads model & other utilies for training or testing.
+
+        Loads model & other utilies for training or testing.
+
+        Args:
+            mode: A string for the mode by which the model should be loaded.
+
+        Returns:
+            None.
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(mode, str), "Variable mode should be of type 'str'."
+        assert (
+            mode == "train" or mode == "predict"
+        ), "Variable mode should 'train' or 'predict' as values."
+
+        # Loads model for current model configuration.
+        self.model = UNet(self.model_configuration)
+
+        # Creates checkpoint manager for the neural network model and loads the optimizer.
+        self.checkpoint_directory_path = "{}/models/{}/v{}/checkpoints".format(
+            self.home_directory_path, self.model_name, self.model_version
+        )
+        self.optimizer = tf.keras.optimizers.Adam(
+            learning_rate=self.model_configuration["model"]["learning_rate"]
+        )
+        checkpoint = tf.train.Checkpoint(optimizer=self.optimizer, model=self.model)
+        self.manager = tf.train.CheckpointManager(
+            checkpoint, directory=self.checkpoint_directory_path, max_to_keep=3
+        )
+
+        # If mode is predict, then the trained checkpoint is restored.
+        if mode == "predict":
+            checkpoint.restore(
+                tf.train.latest_checkpoint(self.checkpoint_directory_path)
+            )
+        print("Finished loading model for {} configuration.".format(mode))
+        print()
