@@ -217,9 +217,7 @@ class Dataset(object):
         print("No. of examples in test dataset: {}".format(self.n_test_examples))
         print()
 
-    def shuffle_slice_datasets(
-        self, train_file_paths: pd.DataFrame, validation_file_paths: pd.DataFrame
-    ) -> None:
+    def shuffle_slice_datasets(self) -> None:
         """Converts images & masks file paths into tensorflow dataset.
 
         Converts images & masks file paths into tensorflow dataset & slices them based on batch size.
@@ -230,46 +228,44 @@ class Dataset(object):
         Returns:
             None.
         """
-        # Checks type & values of arguments.
-        assert isinstance(
-            train_file_paths, pd.DataFrame
-        ), "Variable train_file_paths should be of type 'pd.DataFrame'."
-        assert isinstance(
-            validation_file_paths, pd.DataFrame
-        ), "Variable validation_file_paths should be of type 'pd.DataFrame'."
-
         # Zips images & annotations file paths into single tensor, and shuffles it.
         self.train_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(train_file_paths["image_file_paths"]),
-                list(train_file_paths["mask_file_paths"]),
+                list(self.train_file_paths["image_file_paths"]),
+                list(self.train_file_paths["mask_file_paths"]),
             )
-        ).shuffle(len(train_file_paths))
+        ).shuffle(self.n_train_examples)
         self.validation_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(validation_file_paths["image_file_paths"]),
-                list(validation_file_paths["mask_file_paths"]),
+                list(self.validation_file_paths["image_file_paths"]),
+                list(self.validation_file_paths["mask_file_paths"]),
             )
-        ).shuffle(len(validation_file_paths))
+        ).shuffle(self.n_validation_examples)
         self.test_dataset = tf.data.Dataset.from_tensor_slices(
             (
                 list(self.test_file_paths["image_file_paths"]),
                 list(self.test_file_paths["mask_file_paths"]),
             )
-        ).shuffle(len(self.test_file_paths))
+        ).shuffle(self.n_test_examples)
 
         # Slices the combined dataset based on batch size, and drops remainder values.
         self.batch_size = self.model_configuration["model"]["batch_size"]
-        self.train_dataset = self.train_dataset.batch(self.batch_size)
-        self.validation_dataset = self.validation_dataset.batch(self.batch_size)
-        self.test_dataset = self.test_dataset.batch(self.batch_size)
+        self.train_dataset = self.train_dataset.batch(
+            self.batch_size, drop_remainder=True
+        )
+        self.validation_dataset = self.validation_dataset.batch(
+            self.batch_size, drop_remainder=True
+        )
+        self.test_dataset = self.test_dataset.batch(
+            self.batch_size, drop_remainder=True
+        )
 
         # Computes number of steps per epoch for all dataset.
-        self.n_train_steps_per_epoch = len(train_file_paths) // self.batch_size
+        self.n_train_steps_per_epoch = self.n_train_examples // self.batch_size
         self.n_validation_steps_per_epoch = (
-            len(validation_file_paths) // self.batch_size
+            self.n_validation_examples // self.batch_size
         )
-        self.n_test_steps_per_epoch = len(self.test_file_paths) // self.batch_size
+        self.n_test_steps_per_epoch = self.n_test_examples // self.batch_size
         print("No. of train steps per epoch: {}".format(self.n_train_steps_per_epoch))
         print(
             "No. of validation steps per epoch: {}".format(
