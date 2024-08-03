@@ -257,3 +257,42 @@ class Train(object):
         smooth = 1e-15
         iou = (intersection + smooth) / (union + smooth)
         return iou
+
+    @tf.function
+    def train_step(self, input_batch: tf.Tensor, target_batch: tf.Tensor) -> None:
+        """Trains the model using input & target batches.
+
+        Trains the model using input & target batches.
+
+        Args:
+            input_batch: A tensor for input batch of processed images.
+            target_batch: A tensor for target batch of generated mask images.
+
+        Returns:
+            None.
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(
+            input_batch, tf.Tensor
+        ), "Variable input_batch should be of type 'tf.Tensor'."
+        assert isinstance(
+            target_batch, tf.Tensor
+        ), "Variable target_batch should be of type 'tf.Tensor'."
+
+        # Computes masked images for all input images in the batch, and computes batch loss.
+        with tf.GradientTape() as tape:
+            predicted_batch = self.model([input_batch], True, None)[0]
+            batch_loss = self.compute_loss(target_batch, predicted_batch)
+
+        # Computes gradients using loss. Apply the computed gradients on model variables using optimizer.
+        gradients = tape.gradient(batch_loss, self.model.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+
+        # Computes dice coefficient and iou score for the current batch.
+        batch_dice = self.compute_dice_coefficient(target_batch, predicted_batch)
+        batch_iou = self.compute_intersection_over_union(target_batch, predicted_batch)
+
+        # Computes mean for loss, dice coefficient and iou score.
+        self.train_loss(batch_loss)
+        self.train_dice(batch_dice)
+        self.train_iou(batch_iou)
