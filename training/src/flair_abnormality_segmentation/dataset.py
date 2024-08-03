@@ -2,7 +2,9 @@ import os
 import zipfile
 
 import pandas as pd
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split
+import mlflow
+from mlflow.data import from_pandas
 import tensorflow as tf
 import skimage
 import numpy as np
@@ -159,12 +161,61 @@ class Dataset(object):
             self.file_paths,
             test_size=self.model_configuration["dataset"]["split_percentage"]["test"],
             shuffle=True,
+            random_state=0,
+        )
+        (
+            self.train_file_paths,
+            self.validation_file_paths,
+        ) = train_test_split(
+            self.train_file_paths,
+            test_size=self.model_configuration["dataset"]["split_percentage"][
+                "validation"
+            ],
+            shuffle=True,
+            random_state=0,
         )
 
-        # Creates object for K-Fold cross validation.
-        self.k_fold = KFold(
-            n_splits=self.model_configuration["dataset"]["k_fold"]["n_splits"]
+        # Logs train, validation & test datasets to mlflow server as inputs.
+        mlflow.log_input(
+            from_pandas(
+                self.train_file_paths,
+                name="{}_v{}_train".format(
+                    self.model_configuration["dataset"]["name"],
+                    self.model_configuration["dataset"]["version"],
+                ),
+            )
         )
+        mlflow.log_input(
+            from_pandas(
+                self.validation_file_paths,
+                name="{}_v{}_validation".format(
+                    self.model_configuration["dataset"]["name"],
+                    self.model_configuration["dataset"]["version"],
+                ),
+            )
+        )
+        mlflow.log_input(
+            from_pandas(
+                self.test_file_paths,
+                name="{}_v{}_test".format(
+                    self.model_configuration["dataset"]["name"],
+                    self.model_configuration["dataset"]["version"],
+                ),
+            )
+        )
+
+        # Computes no. of examples per data split.
+        self.n_train_examples = len(self.train_file_paths)
+        self.n_validation_examples = len(self.validation_file_paths)
+        self.n_test_examples = len(self.test_file_paths)
+        print("No. of examples in training dataset: {}".format(self.n_train_examples))
+        print(
+            "No. of examples in validation dataset: {}".format(
+                self.n_validation_examples
+            )
+        )
+        print("No. of examples in test dataset: {}".format(self.n_test_examples))
+        print()
 
     def shuffle_slice_datasets(
         self, train_file_paths: pd.DataFrame, validation_file_paths: pd.DataFrame
