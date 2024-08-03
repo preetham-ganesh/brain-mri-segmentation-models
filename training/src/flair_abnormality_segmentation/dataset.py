@@ -8,6 +8,7 @@ sys.path.append(BASE_PATH)
 
 
 import pandas as pd
+from sklearn.model_selection import train_test_split, KFold
 
 from src.utils import check_directory_path_existence
 
@@ -141,6 +142,32 @@ class Dataset(object):
             )
         )
         print()
+
+    def split_dataset(self):
+        """Splits dataset into train & test data splits. Creates object for KFold cross validation.
+
+        Splits dataset into train & test data splits. Creates object for KFold cross validation.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Splits file paths into train & test splits.
+        (
+            self.train_df,
+            self.test_df,
+        ) = train_test_split(
+            self.file_paths,
+            test_size=self.model_configuration["dataset"]["split_percentage"]["test"],
+            shuffle=True,
+        )
+
+        # Creates object for K-Fold cross validation.
+        self.k_fold = KFold(
+            n_splits=self.model_configuration["dataset"]["k_fold"]["n_splits"]
+        )
 
 
 dataset = Dataset({})
