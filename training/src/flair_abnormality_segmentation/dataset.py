@@ -9,6 +9,7 @@ sys.path.append(BASE_PATH)
 
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
+import tensorflow as tf
 
 from src.utils import check_directory_path_existence
 
@@ -156,8 +157,8 @@ class Dataset(object):
         """
         # Splits file paths into train & test splits.
         (
-            self.train_df,
-            self.test_df,
+            self.train_file_paths,
+            self.test_file_paths,
         ) = train_test_split(
             self.file_paths,
             test_size=self.model_configuration["dataset"]["split_percentage"]["test"],
@@ -168,6 +169,60 @@ class Dataset(object):
         self.k_fold = KFold(
             n_splits=self.model_configuration["dataset"]["k_fold"]["n_splits"]
         )
+
+    def shuffle_slice_datasets(
+        self, train_file_paths: pd.DataFrame, validation_file_paths: pd.DataFrame
+    ) -> None:
+        """Converts images & masks file paths into tensorflow dataset.
+
+        Converts images & masks file paths into tensorflow dataset & slices them based on batch size.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Zips images & annotations file paths into single tensor, and shuffles it.
+        self.train_dataset = tf.data.Dataset.from_tensor_slices(
+            (
+                list(train_file_paths["image_file_path"]),
+                list(train_file_paths["mask_file_path"]),
+            )
+        ).shuffle(len(train_file_paths))
+        self.validation_dataset = tf.data.Dataset.from_tensor_slices(
+            (
+                list(validation_file_paths["image_file_path"]),
+                list(validation_file_paths["mask_file_path"]),
+            )
+        ).shuffle(len(validation_file_paths))
+        self.test_dataset = tf.data.Dataset.from_tensor_slices(
+            (
+                list(self.test_file_paths["image_file_path"]),
+                list(self.test_file_paths["mask_file_path"]),
+            )
+        ).shuffle(len(self.test_file_paths))
+
+        # Slices the combined dataset based on batch size, and drops remainder values.
+        self.batch_size = self.model_configuration["model"]["batch_size"]
+        self.train_dataset = self.train_dataset.batch(self.batch_size)
+        self.validation_dataset = self.validation_dataset.batch(self.batch_size)
+        self.test_dataset = self.test_dataset.batch(self.batch_size)
+
+        # Computes number of steps per epoch for all dataset.
+        self.n_train_steps_per_epoch = len(train_file_paths) // self.batch_size
+        self.n_validation_steps_per_epoch = (
+            len(validation_file_paths) // self.batch_size
+        )
+        self.n_test_steps_per_epoch = len(self.test_file_paths) // self.batch_size
+        print("No. of train steps per epoch: {}".format(self.n_train_steps_per_epoch))
+        print(
+            "No. of validation steps per epoch: {}".format(
+                self.n_validation_steps_per_epoch
+            )
+        )
+        print("No. of test steps per epoch: {}".format(self.n_test_steps_per_epoch))
+        print("")
 
 
 dataset = Dataset({})
