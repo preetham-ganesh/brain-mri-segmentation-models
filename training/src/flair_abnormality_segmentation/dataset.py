@@ -1,13 +1,5 @@
 import os
 import zipfile
-import sys
-
-import skimage.transform
-
-
-BASE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(BASE_PATH)
-
 
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
@@ -306,8 +298,18 @@ class Dataset(object):
 
     def load_input_target_images(
         self, image_file_paths: List[str], mask_file_paths: List[str]
-    ):
-        """"""
+    ) -> List[tf.Tensor]:
+        """Loads input & mask images for current batch as tensors.
+
+        Loads input & mask images for current batch as tensors.
+
+        Args:
+            image_file_paths: A list of strings for locations of images in current batch.
+            mask_file_paths: A list of strings for locations of masks in current batch.
+
+        Returns:
+            A list of tensors for input & target batch of images.
+        """
         # Checks types & values of arguments.
         assert isinstance(
             image_file_paths, list
@@ -335,13 +337,30 @@ class Dataset(object):
         )
 
         # Iterates across images & annotations file paths in current batch.
-        for index in range(len(image_file_paths)):
-            # Loads the image for the current image path.
-            input_image = self.load_image(str(image_file_paths[index], "UTF-8"))
-            image_file_path = str(images_file_paths[index], "UTF-8")
-            annotation_file_path = str(annotations_file_paths[index], "UTF-8")
+        for id_0 in range(len(image_file_paths)):
+            # Loads the image & mask for the current image paths.
+            input_image = self.load_image(str(image_file_paths[id_0], "UTF-8"))
+            target_image = self.load_image(str(mask_file_paths[id_0], "UTF-8"))
 
-            # Loads input and target images for the current index image & annotation file paths.
-            input_image, target_image = self.load_input_target_images(
-                image_file_path, annotation_file_path
-            )
+            # Resizes image & mask based on model configuration.
+            input_image = self.resize_image(input_image)
+            target_image = self.resize_image(target_image)
+
+            # Thresholds image to have better distinction of regions in image.
+            input_image = self.threshold_image(input_image)
+
+            # Adds loaded & preprocessed input & target images to corresponding batch arrays.
+            input_batch[id_0, :, :, :] = input_image
+            target_batch[id_0, :, :] = target_image
+
+        # Converts input & target batch lists into tensors.
+        input_batch = tf.convert_to_tensor(input_batch, dtype=tf.float32)
+        target_batch = tf.convert_to_tensor(target_batch, dtype=tf.float32)
+
+        # Normalizes the input batches from [0, 255] to [0, 1] range
+        input_batch = input_batch / 255.0
+        target_batch = target_batch / 255.0
+
+        # Adds an extra dimension to the target batch.
+        target_batch = tf.expand_dims(target_batch, axis=-1)
+        return [input_batch, target_batch]
