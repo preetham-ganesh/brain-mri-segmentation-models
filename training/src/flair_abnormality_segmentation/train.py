@@ -329,3 +329,21 @@ class Train(object):
         self.validation_loss(batch_loss)
         self.validation_dice(batch_dice)
         self.validation_iou(batch_iou)
+
+    def reset_metrics_trackers(self) -> None:
+        """Resets states for trackers before the start of each epoch.
+
+        Resets states for trackers before the start of each epoch.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        self.train_loss.reset_state()
+        self.validation_loss.reset_state()
+        self.train_dice.reset_state()
+        self.validation_dice.reset_state()
+        self.train_iou.reset_state()
+        self.validation_iou.reset_state()
