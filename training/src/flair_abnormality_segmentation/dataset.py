@@ -1,5 +1,13 @@
 import os
 import zipfile
+import sys
+
+
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(BASE_PATH)
+
+
+import pandas as pd
 
 from src.utils import check_directory_path_existence
 
@@ -44,19 +52,19 @@ class Dataset(object):
         zip_file_path = "{}/data/raw_data/archive.zip".format(self.home_directory_path)
 
         # Creates the directory path.
-        extracted_data_directory_path = check_directory_path_existence(
+        self.extracted_data_directory_path = check_directory_path_existence(
             "data/extracted_data/lgg_mri_segmentation"
         )
 
         # If file does not exist, then extracts files from the directory.
         if not os.path.exists(
-            "{}/kaggle_3m/data.csv".format(extracted_data_directory_path)
+            "{}/kaggle_3m/data.csv".format(self.extracted_data_directory_path)
         ):
 
             # Extracts files from downloaded data zip file into a directory.
             try:
                 with zipfile.ZipFile(zip_file_path, "r") as zip_file:
-                    zip_file.extractall(extracted_data_directory_path)
+                    zip_file.extractall(self.extracted_data_directory_path)
             except FileNotFoundError as error:
                 raise FileNotFoundError(
                     "{} does not exist. Download data from ".format(zip_file_path)
@@ -65,7 +73,76 @@ class Dataset(object):
                 )
             print(
                 "Finished extracting files from 'archive.zip' to {}.".format(
-                    extracted_data_directory_path
+                    self.extracted_data_directory_path
                 )
             )
             print()
+
+    def load_dataset_file_paths(self) -> None:
+        """Loads file paths of images & masks in the dataset.
+
+        Loads file paths of images & masks in the dataset.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Lists patient's directory names from the extracted data directory.
+        patients_directory_names = os.listdir(
+            "{}/kaggle_3m".format(self.extracted_data_directory_path)
+        )
+
+        # Creates empty list to store image & mask file paths as records.
+        self.file_paths = list()
+
+        # Iterates across patients directory names.
+        for directory_name in patients_directory_names:
+            patient_directory_path = "{}/kaggle_3m/{}".format(
+                self.extracted_data_directory_path, directory_name
+            )
+
+            # If directory name is not a directory or does not start with 'TCGA'.
+            if not os.path.isdir(
+                patient_directory_path
+            ) or not directory_name.startswith("TCGA"):
+                continue
+
+            # Lists file names in the patient directory path.
+            image_file_names = os.listdir(patient_directory_path)
+
+            # Iterates aross possible image ids.
+            n_images = len(image_file_names) // 2
+            image_id = 0
+            while image_id <= n_images:
+                image_file_path = "{}/{}_{}.tif".format(
+                    patient_directory_path, directory_name, image_id + 1
+                )
+                mask_file_path = "{}/{}_{}.tif".format(
+                    patient_directory_path, directory_name, image_id + 1
+                )
+
+                # Checks if image & mask file paths are valid.
+                if os.path.isfile(image_file_path) and os.path.isfile(mask_file_path):
+                    self.file_paths.append(
+                        {
+                            "image_file_path": image_file_path,
+                            "mask_file_path": mask_file_path,
+                        }
+                    )
+                image_id += 1
+
+        # Converts list of file paths as records into dataframe.
+        self.file_paths = pd.DataFrame.from_records(self.file_paths)
+        print(
+            "No. of image & mask pair examples in the dataset: {}".format(
+                len(self.file_paths)
+            )
+        )
+        print()
+
+
+dataset = Dataset({})
+dataset.extract_data_from_zip_file()
+dataset.load_dataset_file_paths()
