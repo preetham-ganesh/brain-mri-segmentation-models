@@ -1,4 +1,5 @@
 import os
+import time
 
 import tensorflow as tf
 import mlflow
@@ -347,3 +348,55 @@ class Train(object):
         self.validation_dice.reset_state()
         self.train_iou.reset_state()
         self.validation_iou.reset_state()
+
+    def train_model_per_epoch(self, epoch: int) -> None:
+        """Trains the model using train dataset for current epoch.
+
+        Trains the model using train dataset for current epoch.
+
+        Args:
+            epoch: An integer for the number of current epoch.
+
+        Returns:
+            None.
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(epoch, int), "Variable epoch should be of type 'int'."
+
+        # Iterates across batches in the train dataset.
+        for batch, (image_file_paths, mask_file_paths) in enumerate(
+            self.dataset.train_dataset.take(self.dataset.n_train_steps_per_epoch)
+        ):
+            batch_start_time = time.time()
+
+            # Loads input & target batch images for file paths in current batch.
+            input_batch, target_batch = self.dataset.load_input_target_images(
+                list(image_file_paths.numpy()), list(mask_file_paths.numpy())
+            )
+
+            # Trains the model using the current input and target batch.
+            self.train_step(input_batch, target_batch)
+            batch_end_time = time.time()
+
+            print(
+                "Epoch={}, Batch={}, Train loss={}, Train dice coefficient={}, Train IoU={}, Time taken={} "
+                "sec.".format(
+                    epoch + 1,
+                    batch,
+                    str(round(self.train_loss.result().numpy(), 3)),
+                    str(round(self.train_dice.result().numpy(), 3)),
+                    str(round(self.train_iou.result().numpy(), 3)),
+                    round(batch_end_time - batch_start_time, 3),
+                )
+            )
+
+        # Logs train metrics for current epoch.
+        mlflow.log_metrics(
+            {
+                "train_loss": self.train_loss.result().numpy(),
+                "train_dice_coefficient": self.train_dice.result().numpy(),
+                "train_iou": self.train_iou.result().numpy(),
+            },
+            step=epoch,
+        )
+        print("")
