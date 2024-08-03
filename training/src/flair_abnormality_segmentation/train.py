@@ -281,7 +281,7 @@ class Train(object):
 
         # Computes masked images for all input images in the batch, and computes batch loss.
         with tf.GradientTape() as tape:
-            predicted_batch = self.model([input_batch], True, None)[0]
+            predicted_batch = self.model([input_batch], training=True, masks=None)[0]
             batch_loss = self.compute_loss(target_batch, predicted_batch)
 
         # Computes gradients using loss. Apply the computed gradients on model variables using optimizer.
@@ -296,3 +296,36 @@ class Train(object):
         self.train_loss(batch_loss)
         self.train_dice(batch_dice)
         self.train_iou(batch_iou)
+
+    def validation_step(self, input_batch: tf.Tensor, target_batch: tf.Tensor) -> None:
+        """Validates the model using input and target batches.
+
+        Validates the model using input and target batches.
+
+        Args:
+            input_batch: A tensor for input batch of processed images.
+            target_batch: A tensor for target batch of generated mask images.
+
+        Returns:
+            None.
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(
+            input_batch, tf.Tensor
+        ), "Variable input_batch should be of type 'tf.Tensor'."
+        assert isinstance(
+            target_batch, tf.Tensor
+        ), "Variable target_batch should be of type 'tf.Tensor'."
+
+        # Computes masked images for all input images in the batch.
+        predicted_batch = self.model([input_batch], training=False, masks=None)[0]
+
+        # Computes loss, dice coefficient & IoU for the target batch and predicted batch.
+        batch_loss = self.compute_loss(target_batch, predicted_batch)
+        batch_dice = self.compute_dice_coefficient(target_batch, predicted_batch)
+        batch_iou = self.compute_intersection_over_union(target_batch, predicted_batch)
+
+        # Computes mean for loss & accuracy.
+        self.validation_loss(batch_loss)
+        self.validation_dice(batch_dice)
+        self.validation_iou(batch_iou)
