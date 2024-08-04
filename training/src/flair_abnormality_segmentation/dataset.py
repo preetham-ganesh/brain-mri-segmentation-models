@@ -67,9 +67,9 @@ class Dataset(object):
                     zip_file.extractall(self.extracted_data_directory_path)
             except FileNotFoundError as error:
                 raise FileNotFoundError(
-                    "{} does not exist. Download data from ".format(zip_file_path)
-                    + "'https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation', and place it in "
-                    + "'data/raw_data' as 'archive.zip'."
+                    "{} does not exist. Download data from "
+                    "'https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation', and place it in "
+                    "'data/raw_data' as 'archive.zip'.".format(zip_file_path)
                 )
             print(
                 "Finished extracting files from 'archive.zip' to {}.".format(

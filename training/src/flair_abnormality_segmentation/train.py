@@ -510,7 +510,7 @@ class Train(object):
 
         # If best validation loss is not higher than the current validation loss, then the number of times the model
         # has not improved is incremented by 1.
-        elif self.patience_count < 2:
+        elif self.patience_count < self.model_configuration["model"]["patience_count"]:
             self.patience_count += 1
             print("Best validation loss did not improve.")
             print("Checkpoint not saved.")
@@ -519,3 +519,55 @@ class Train(object):
         else:
             return False
         return True
+
+    def fit(self) -> None:
+        """Trains & validates the loaded model using train & validation dataset.
+
+        Trains & validates the loaded model using train & validation dataset.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Initializes trackers which computes the mean of all metrics.
+        self.initialize_metric_trackers()
+
+        # Iterates across epochs for training the neural network model.
+        for epoch in range(self.model_configuration["model"]["epochs"]):
+            epoch_start_time = time.time()
+
+            # Resets states for trackers before the start of each epoch.
+            self.reset_metrics_trackers()
+
+            # Trains the model using batces in the train dataset.
+            self.train_model_per_epoch(epoch)
+
+            # Validates the model using batches in the validation dataset.
+            self.validate_model_per_epoch(epoch)
+
+            epoch_end_time = time.time()
+            print(
+                "Epoch={}, Train loss={}, Validation loss={}, Train dice coefficient={}, "
+                "Validation dice coefficient={}, Training IoU={}, Validation IoU={}, Time taken={} sec.".format(
+                    epoch + 1,
+                    str(round(self.train_loss.result().numpy(), 3)),
+                    str(round(self.validation_loss.result().numpy(), 3)),
+                    str(round(self.train_dice.result().numpy(), 3)),
+                    str(round(self.validation_dice.result().numpy(), 3)),
+                    str(round(self.train_iou.result().numpy(), 3)),
+                    str(round(self.validation_iou.result().numpy(), 3)),
+                    round(epoch_end_time - epoch_start_time, 3),
+                )
+            )
+
+            # Stops the model from learning further if the performance has not improved from previous epoch.
+            model_training_status = self.early_stopping()
+            if not model_training_status:
+                print(
+                    "Model did not improve after 4th time. Model stopped from training further."
+                )
+                print()
+                break
+            print()
