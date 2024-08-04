@@ -571,3 +571,51 @@ class Train(object):
                 print()
                 break
             print()
+
+    def test_model(self) -> None:
+        """Tests the trained model using the test dataset.
+
+        Tests the trained model using the test dataset.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Resets states for validation metrics.
+        self.reset_metrics_trackers()
+
+        # Iterates across batches in the validation dataset.
+        for batch, (image_file_paths, mask_file_paths) in enumerate(
+            self.dataset.test_dataset.take(self.dataset.n_test_steps_per_epoch)
+        ):
+            # Loads input & target batch images for file paths in current batch.
+            input_batch, target_batch = self.dataset.load_input_target_images(
+                list(image_file_paths.numpy()), list(mask_file_paths.numpy())
+            )
+
+            # Tests the model using the current input and target batch.
+            self.validation_step(input_batch, target_batch)
+
+        # Logs test metrics for current epoch.
+        mlflow.log_metrics(
+            {
+                "test_loss": self.validation_loss.result().numpy(),
+                "test_dice_coefficient": self.validation_dice.result().numpy(),
+                "test_iou": self.validation_iou.result().numpy(),
+            }
+        )
+
+        print(
+            "Test loss={}.".format(str(round(self.validation_loss.result().numpy(), 3)))
+        )
+        print(
+            "Test dice coefficient={}.".format(
+                str(round(self.validation_dice.result().numpy(), 3))
+            )
+        )
+        print(
+            "Test IoU={}.".format(str(round(self.validation_iou.result().numpy(), 3)))
+        )
+        print("")
