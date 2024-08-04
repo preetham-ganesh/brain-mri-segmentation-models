@@ -2,7 +2,9 @@ import os
 import zipfile
 
 import pandas as pd
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split
+import mlflow
+from mlflow.data import from_pandas
 import tensorflow as tf
 import skimage
 import numpy as np
@@ -65,9 +67,9 @@ class Dataset(object):
                     zip_file.extractall(self.extracted_data_directory_path)
             except FileNotFoundError as error:
                 raise FileNotFoundError(
-                    "{} does not exist. Download data from ".format(zip_file_path)
-                    + "'https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation', and place it in "
-                    + "'data/raw_data' as 'archive.zip'."
+                    "{} does not exist. Download data from "
+                    "'https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation', and place it in "
+                    "'data/raw_data' as 'archive.zip'.".format(zip_file_path)
                 )
             print(
                 "Finished extracting files from 'archive.zip' to {}.".format(
@@ -159,16 +161,63 @@ class Dataset(object):
             self.file_paths,
             test_size=self.model_configuration["dataset"]["split_percentage"]["test"],
             shuffle=True,
+            random_state=0,
+        )
+        (
+            self.train_file_paths,
+            self.validation_file_paths,
+        ) = train_test_split(
+            self.train_file_paths,
+            test_size=self.model_configuration["dataset"]["split_percentage"][
+                "validation"
+            ],
+            shuffle=True,
+            random_state=0,
         )
 
-        # Creates object for K-Fold cross validation.
-        self.k_fold = KFold(
-            n_splits=self.model_configuration["dataset"]["k_fold"]["n_splits"]
+        # Logs train, validation & test datasets to mlflow server as inputs.
+        mlflow.log_input(
+            from_pandas(
+                self.train_file_paths,
+                name="{}_v{}_train".format(
+                    self.model_configuration["dataset"]["name"],
+                    self.model_configuration["dataset"]["version"],
+                ),
+            )
+        )
+        mlflow.log_input(
+            from_pandas(
+                self.validation_file_paths,
+                name="{}_v{}_validation".format(
+                    self.model_configuration["dataset"]["name"],
+                    self.model_configuration["dataset"]["version"],
+                ),
+            )
+        )
+        mlflow.log_input(
+            from_pandas(
+                self.test_file_paths,
+                name="{}_v{}_test".format(
+                    self.model_configuration["dataset"]["name"],
+                    self.model_configuration["dataset"]["version"],
+                ),
+            )
         )
 
-    def shuffle_slice_datasets(
-        self, train_file_paths: pd.DataFrame, validation_file_paths: pd.DataFrame
-    ) -> None:
+        # Computes no. of examples per data split.
+        self.n_train_examples = len(self.train_file_paths)
+        self.n_validation_examples = len(self.validation_file_paths)
+        self.n_test_examples = len(self.test_file_paths)
+        print("No. of examples in training dataset: {}".format(self.n_train_examples))
+        print(
+            "No. of examples in validation dataset: {}".format(
+                self.n_validation_examples
+            )
+        )
+        print("No. of examples in test dataset: {}".format(self.n_test_examples))
+        print()
+
+    def shuffle_slice_datasets(self) -> None:
         """Converts images & masks file paths into tensorflow dataset.
 
         Converts images & masks file paths into tensorflow dataset & slices them based on batch size.
@@ -179,46 +228,44 @@ class Dataset(object):
         Returns:
             None.
         """
-        # Checks type & values of arguments.
-        assert isinstance(
-            train_file_paths, pd.DataFrame
-        ), "Variable train_file_paths should be of type 'pd.DataFrame'."
-        assert isinstance(
-            validation_file_paths, pd.DataFrame
-        ), "Variable validation_file_paths should be of type 'pd.DataFrame'."
-
         # Zips images & annotations file paths into single tensor, and shuffles it.
         self.train_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(train_file_paths["image_file_paths"]),
-                list(train_file_paths["mask_file_paths"]),
+                list(self.train_file_paths["image_file_paths"]),
+                list(self.train_file_paths["mask_file_paths"]),
             )
-        ).shuffle(len(train_file_paths))
+        ).shuffle(self.n_train_examples)
         self.validation_dataset = tf.data.Dataset.from_tensor_slices(
             (
-                list(validation_file_paths["image_file_paths"]),
-                list(validation_file_paths["mask_file_paths"]),
+                list(self.validation_file_paths["image_file_paths"]),
+                list(self.validation_file_paths["mask_file_paths"]),
             )
-        ).shuffle(len(validation_file_paths))
+        ).shuffle(self.n_validation_examples)
         self.test_dataset = tf.data.Dataset.from_tensor_slices(
             (
                 list(self.test_file_paths["image_file_paths"]),
                 list(self.test_file_paths["mask_file_paths"]),
             )
-        ).shuffle(len(self.test_file_paths))
+        ).shuffle(self.n_test_examples)
 
         # Slices the combined dataset based on batch size, and drops remainder values.
         self.batch_size = self.model_configuration["model"]["batch_size"]
-        self.train_dataset = self.train_dataset.batch(self.batch_size)
-        self.validation_dataset = self.validation_dataset.batch(self.batch_size)
-        self.test_dataset = self.test_dataset.batch(self.batch_size)
+        self.train_dataset = self.train_dataset.batch(
+            self.batch_size, drop_remainder=True
+        )
+        self.validation_dataset = self.validation_dataset.batch(
+            self.batch_size, drop_remainder=True
+        )
+        self.test_dataset = self.test_dataset.batch(
+            self.batch_size, drop_remainder=True
+        )
 
         # Computes number of steps per epoch for all dataset.
-        self.n_train_steps_per_epoch = len(train_file_paths) // self.batch_size
+        self.n_train_steps_per_epoch = self.n_train_examples // self.batch_size
         self.n_validation_steps_per_epoch = (
-            len(validation_file_paths) // self.batch_size
+            self.n_validation_examples // self.batch_size
         )
-        self.n_test_steps_per_epoch = len(self.test_file_paths) // self.batch_size
+        self.n_test_steps_per_epoch = self.n_test_examples // self.batch_size
         print("No. of train steps per epoch: {}".format(self.n_train_steps_per_epoch))
         print(
             "No. of validation steps per epoch: {}".format(
