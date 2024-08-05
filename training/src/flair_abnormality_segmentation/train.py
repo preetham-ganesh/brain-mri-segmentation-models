@@ -93,7 +93,8 @@ class Train(object):
         ), "Variable mode should 'train' or 'predict' as values."
 
         # Loads model for current model configuration.
-        self.model = UNet(self.model_configuration)
+        if mode == "train":
+            self.model = UNet(self.model_configuration)
 
         # Creates checkpoint manager for the neural network model and loads the optimizer.
         self.checkpoint_directory_path = (
@@ -140,12 +141,16 @@ class Train(object):
         model_summary = "\n".join(model_summary)
         mlflow.log_text(
             model_summary,
-            "v{}/summary.txt".format(self.model_configuration["version"]),
+            "flair_abnormality_segmentation/v{}/summary.txt".format(
+                self.model_configuration["version"]
+            ),
         )
 
         # Creates the following directory path if it does not exist.
         self.reports_directory_path = check_directory_path_existence(
-            "models/v{}/reports".format(self.model_version)
+            "models/flair_abnormality_segmentation/v{}/reports".format(
+                self.model_version
+            )
         )
 
         # Plots the model & saves it as a PNG file.
@@ -161,7 +166,9 @@ class Train(object):
             # Logs the saved model plot PNG file.
             mlflow.log_artifact(
                 "{}/model_plot.png".format(self.reports_directory_path),
-                "v{}".format(self.model_configuration["version"]),
+                "flair_abnormality_segmentation/v{}".format(
+                    self.model_configuration["version"]
+                ),
             )
 
     def initialize_metric_trackers(self) -> None:
@@ -675,7 +682,7 @@ class Train(object):
                 Return:
                     An integer for the number predicted by the model for the current image.
                 """
-                prediction = self.model([images], False, None)
+                prediction = self.model([images], training=False, masks=None)
                 return prediction
 
         # Exports trained tensorflow model as tensorflow module for serving.
