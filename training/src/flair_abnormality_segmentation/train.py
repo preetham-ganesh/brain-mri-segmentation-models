@@ -732,3 +732,21 @@ class Train(object):
         ), "Shape does not match between the output from saved & loaded models."
         print("Finished serializing model & configuration files.")
         print()
+
+        # Logs serialized model as artifact.
+        mlflow.log_artifacts(
+            "{}/models/flair_abnormality_segmentation/v{}/serialized".format(
+                home_directory_path, self.model_version
+            ),
+            "flair_abnormality_segmentation/v{}/model".format(
+                self.model_configuration["version"]
+            ),
+        )
+
+        # Logs updated model configuration as artifact.
+        mlflow.log_dict(
+            self.model_configuration,
+            "flair_abnormality_segmentation/v{}/model_configuration.json".format(
+                self.model_version
+            ),
+        )
