@@ -43,9 +43,7 @@ class Train(object):
         """
         self.home_directory_path = os.getcwd()
         model_configuration_directory_path = (
-            "{}/configs/models/flair_abnormality_segmentation".format(
-                self.home_directory_path
-            )
+            "{}/configs/flair_abnormality_segmentation".format(self.home_directory_path)
         )
         self.model_configuration = load_json_file(
             "v{}".format(self.model_version), model_configuration_directory_path
