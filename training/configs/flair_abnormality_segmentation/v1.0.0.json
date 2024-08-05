@@ -66,7 +66,7 @@
             "block_6_expand_relu",
             "block_3_expand_relu",
             "block_1_expand_relu",
-            "input_image"
+            "input_layer"
           ],
           "alpha": 1.0
         },
