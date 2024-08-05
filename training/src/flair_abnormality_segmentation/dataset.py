@@ -295,32 +295,6 @@ class Dataset(object):
         image = skimage.io.imread(image_file_path)
         return image
 
-    def resize_image(self, image: np.ndarray) -> np.ndarray:
-        """Resizes image based on model configuration.
-
-        Resizes image to (final_image_height, final_image_width, n_channels) shape.
-
-        Args:
-            image: A NumPy array for the image.
-
-        Returns:
-            A NumPy array for the resized version of the image.
-        """
-        # Checks type & values of arguments.
-        assert isinstance(
-            image, np.ndarray
-        ), "Variable image should be of type 'numpy.ndarray'."
-
-        # Resizes image to (final_image_height, final_image_width, n_channels). n_channels = 1 for mask & for input.
-        resized_image = skimage.transform.resize(
-            image,
-            output_shape=(
-                self.model_configuration["model"]["final_image_height"],
-                self.model_configuration["model"]["final_image_width"],
-            ),
-        )
-        return resized_image
-
     def threshold_image(self, image: np.ndarray) -> np.ndarray:
         """Thresholds image to have better distinction of regions in image.
 
@@ -388,10 +362,6 @@ class Dataset(object):
             # Loads the image & mask for the current image paths.
             input_image = self.load_image(str(image_file_paths[id_0], "UTF-8"))
             target_image = self.load_image(str(mask_file_paths[id_0], "UTF-8"))
-
-            # Resizes image & mask based on model configuration.
-            input_image = self.resize_image(input_image)
-            target_image = self.resize_image(target_image)
 
             # Thresholds image to have better distinction of regions in image.
             input_image = self.threshold_image(input_image)
