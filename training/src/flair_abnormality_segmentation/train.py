@@ -427,7 +427,7 @@ class Train(object):
             batch_start_time = time.time()
 
             # Loads input & target batch images for file paths in current batch.
-            input_batch, target_batch = self.dataset.load_batch_input_target_images(
+            input_batch, target_batch = self.dataset.load_input_target_images(
                 list(image_file_paths.numpy()), list(mask_file_paths.numpy())
             )
 
