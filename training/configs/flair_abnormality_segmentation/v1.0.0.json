@@ -182,7 +182,7 @@
           "size": [2, 2]
         },
         "concat_3": {
-          "input": ["input_image"],
+          "input": ["input_layer"],
           "axis": 3,
           "pretrained": true
         },
