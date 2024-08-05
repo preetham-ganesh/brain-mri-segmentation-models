@@ -96,8 +96,10 @@ class Train(object):
         self.model = UNet(self.model_configuration)
 
         # Creates checkpoint manager for the neural network model and loads the optimizer.
-        self.checkpoint_directory_path = "{}/models/{}/v{}/checkpoints".format(
-            self.home_directory_path, self.model_name, self.model_version
+        self.checkpoint_directory_path = (
+            "{}/models/flair_abnormality_segmentation/v{}/checkpoints".format(
+                self.home_directory_path, self.model_version
+            )
         )
         self.optimizer = tf.keras.optimizers.Adam(
             learning_rate=self.model_configuration["model"]["learning_rate"]
