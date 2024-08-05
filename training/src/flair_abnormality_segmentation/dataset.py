@@ -119,7 +119,7 @@ class Dataset(object):
                 image_file_path = "{}/{}_{}.tif".format(
                     patient_directory_path, directory_name, image_id + 1
                 )
-                mask_file_path = "{}/{}_{}.tif".format(
+                mask_file_path = "{}/{}_{}_mask.tif".format(
                     patient_directory_path, directory_name, image_id + 1
                 )
 
