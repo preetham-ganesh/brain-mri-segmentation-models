@@ -5,6 +5,7 @@ import warnings
 import argparse
 
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_PATH)
 logging.getLogger("tensorflow").setLevel(logging.FATAL)
@@ -22,7 +23,7 @@ from typing import List
 
 
 class Segmentation(object):
-    """Predicts mask for FLAIR abnormality in brain MRI images."""
+    """Predicts segmentation mask for FLAIR abnormality in brain MRI images."""
 
     def __init__(self, model_version: str) -> None:
         """Creates object attributes for the PredictMask class.
@@ -131,12 +132,12 @@ class Segmentation(object):
         predicted_image = np.squeeze(prediction, axis=0)
         predicted_image = np.squeeze(predicted_image, axis=-1)
 
-        # De-normalizes predicted image from [0, 1] to [0, 255], and type casts it to uint8.
+        # De-normalizes predicted image from [0, 1] to [0, 255].
         predicted_image *= 255.0
-        predicted_image = predicted_image.astype(np.uint8)
 
-        # Thresholds the predicted image to convert into black & white image.
+        # Thresholds the predicted image to convert into black & white image, and type casts it to uint8
         predicted_image = self.dataset.threshold_image(predicted_image)
+        predicted_image = predicted_image.astype(np.uint8)
         return predicted_image
 
     def predict_mask(self, image_file_path: str) -> None:
@@ -162,7 +163,7 @@ class Segmentation(object):
         prediction = self.model.predict(model_input_image)
 
         # Converts the prediction from the segmentation model into an image.
-        predicted_image = self.postprocess_prediction(prediction)
+        predicted_image = self.postprocess_prediction(prediction[0].numpy())
 
         # Creates the following path if it does not exist.
         self.predicted_images_directory_path = check_directory_path_existence(
@@ -177,14 +178,19 @@ class Segmentation(object):
             for name in os.listdir(self.predicted_images_directory_path)
             if name[0] != "."
         ]
-        n_images_predicted = int(len(images_predicted) / 3)
+        n_images_predicted = int(len(images_predicted) / 2)
 
-        # Saves input, predicted, and annotated images.
+        # Saves input, and predicted images.
         skimage.io.imsave(
             "{}/{}_input.png".format(
                 self.predicted_images_directory_path, n_images_predicted
             ),
             image,
+        )
+        print(
+            "Original image saved at {}/{}_input.png.".format(
+                self.predicted_images_directory_path, n_images_predicted
+            )
         )
         skimage.io.imsave(
             "{}/{}_predicted.png".format(
@@ -192,3 +198,47 @@ class Segmentation(object):
             ),
             predicted_image,
         )
+        print(
+            "Predicted mask image saved at {}/{}_predicted.png.".format(
+                self.predicted_images_directory_path, n_images_predicted
+            )
+        )
+        print()
+
+
+def main():
+    print()
+
+    # Parses the arguments.
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-mv",
+        "--model_version",
+        type=str,
+        required=True,
+        help="Version of the model used to perform the prediction.",
+    )
+    parser.add_argument(
+        "-ifp",
+        "--image_file_path",
+        type=str,
+        required=True,
+        help="Location where the image is located.",
+    )
+    args = parser.parse_args()
+
+    # Creates an object for Predict class.
+    segmentation = Segmentation(args.model_version)
+
+    # Loads model configuration based on model name & model version.
+    segmentation.load_model_configuration()
+
+    # Loads model based model configuration.
+    segmentation.load_model()
+
+    # Predicts mask for the current image using the current model.
+    segmentation.predict_mask(args.image_file_path)
+
+
+if __name__ == "__main__":
+    main()
