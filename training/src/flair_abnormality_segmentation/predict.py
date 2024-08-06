@@ -13,12 +13,15 @@ warnings.filterwarnings("ignore")
 
 import tensorflow as tf
 import numpy as np
+import skimage
 
-from src.utils import load_json_file
+from src.utils import load_json_file, check_directory_path_existence
 from src.flair_abnormality_segmentation.dataset import Dataset
 
+from typing import List
 
-class PredictMask(object):
+
+class Segmentation(object):
     """Predicts mask for FLAIR abnormality in brain MRI images."""
 
     def __init__(self, model_version: str) -> None:
@@ -70,15 +73,15 @@ class PredictMask(object):
         """
         # Loads the tensorflow serialized model using model name & version.
         self.model = tf.saved_model.load(
-            "{}/models/{}/v{}/serialized".format(
-                self.home_directory_path, self.model_name, self.model_version
+            "{}/models/flair_abnormality_segmentation/v{}/model".format(
+                self.home_directory_path, self.model_version
             ),
         )
 
         # Initializes object for the Dataset class.
         self.dataset = Dataset(self.model_configuration)
 
-    def load_preprocess_input_image(self, image_file_path: str) -> np.ndarray:
+    def load_preprocess_input_image(self, image_file_path: str) -> List[np.ndarray]:
         """Loads & preprocesses image based on segmentation model requirements.
 
         Loads & preprocesses image based on segmentation model requirements.
@@ -87,7 +90,7 @@ class PredictMask(object):
             image_file_path: A string for the location of the image.
 
         Returns:
-            A NumPy array for the processed image as input to the model.
+            A list of NumPy arrays for the original & processed image as input to the model.
         """
         # Asserts type & value of the arguments.
         assert isinstance(
@@ -106,7 +109,7 @@ class PredictMask(object):
         # Casts input image to float32 and normalizes the image from [0, 255] range to [0, 1] range.
         model_input_image = np.float32(model_input_image)
         model_input_image = model_input_image / 255.0
-        return model_input_image
+        return [image, model_input_image]
 
     def postprocess_prediction(self, prediction: np.ndarray) -> np.ndarray:
         """Converts the prediction from the segmentation model output into an image.
@@ -135,3 +138,57 @@ class PredictMask(object):
         # Thresholds the predicted image to convert into black & white image.
         predicted_image = self.dataset.threshold_image(predicted_image)
         return predicted_image
+
+    def predict_mask(self, image_file_path: str) -> None:
+        """Predicts mask for the current image using the current model.
+
+        Predicts mask for the current image using the current model.
+
+        Args:
+            image_file_path: A string for the location where the image is located.
+
+        Returns:
+            None
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(
+            image_file_path, str
+        ), "Variable image_file_path should be of type 'str'."
+
+        # Loads & preprocesses image based on segmentation model requirements.
+        image, model_input_image = self.load_preprocess_input_image(image_file_path)
+
+        # Predicts the class for each pixel in the current image input.
+        prediction = self.model.predict(model_input_image)
+
+        # Converts the prediction from the segmentation model into an image.
+        predicted_image = self.postprocess_prediction(prediction)
+
+        # Creates the following path if it does not exist.
+        self.predicted_images_directory_path = check_directory_path_existence(
+            "models/flair_abnormality_segmentation/v{}/predictions".format(
+                self.model_version
+            )
+        )
+
+        # Computes number of images predicted using this model.
+        images_predicted = [
+            name
+            for name in os.listdir(self.predicted_images_directory_path)
+            if name[0] != "."
+        ]
+        n_images_predicted = int(len(images_predicted) / 3)
+
+        # Saves input, predicted, and annotated images.
+        skimage.io.imsave(
+            "{}/{}_input.png".format(
+                self.predicted_images_directory_path, n_images_predicted
+            ),
+            image,
+        )
+        skimage.io.imsave(
+            "{}/{}_predicted.png".format(
+                self.predicted_images_directory_path, n_images_predicted
+            ),
+            predicted_image,
+        )
