@@ -46,6 +46,7 @@ class UNet(tf.keras.Model):
 
                 # Filters the model based on output & input layer. Sets the trainable flag based on model configuration.
                 output_layer_names = config["output_layer"]
+                output_layer_names[-1] = mobilenet.layers[0].name
                 mobilenet_outputs = [
                     mobilenet.get_layer(name).output for name in output_layer_names
                 ]

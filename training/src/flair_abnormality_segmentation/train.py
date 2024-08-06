@@ -43,9 +43,7 @@ class Train(object):
         """
         self.home_directory_path = os.getcwd()
         model_configuration_directory_path = (
-            "{}/configs/models/flair_abnormality_segmentation".format(
-                self.home_directory_path
-            )
+            "{}/configs/flair_abnormality_segmentation".format(self.home_directory_path)
         )
         self.model_configuration = load_json_file(
             "v{}".format(self.model_version), model_configuration_directory_path
@@ -95,11 +93,14 @@ class Train(object):
         ), "Variable mode should 'train' or 'predict' as values."
 
         # Loads model for current model configuration.
-        self.model = UNet(self.model_configuration)
+        if mode == "train":
+            self.model = UNet(self.model_configuration)
 
         # Creates checkpoint manager for the neural network model and loads the optimizer.
-        self.checkpoint_directory_path = "{}/models/{}/v{}/checkpoints".format(
-            self.home_directory_path, self.model_name, self.model_version
+        self.checkpoint_directory_path = (
+            "{}/models/flair_abnormality_segmentation/v{}/checkpoints".format(
+                self.home_directory_path, self.model_version
+            )
         )
         self.optimizer = tf.keras.optimizers.Adam(
             learning_rate=self.model_configuration["model"]["learning_rate"]
@@ -140,12 +141,16 @@ class Train(object):
         model_summary = "\n".join(model_summary)
         mlflow.log_text(
             model_summary,
-            "v{}/summary.txt".format(self.model_configuration["version"]),
+            "flair_abnormality_segmentation/v{}/summary.txt".format(
+                self.model_configuration["version"]
+            ),
         )
 
         # Creates the following directory path if it does not exist.
         self.reports_directory_path = check_directory_path_existence(
-            "models/v{}/reports".format(self.model_version)
+            "models/flair_abnormality_segmentation/v{}/reports".format(
+                self.model_version
+            )
         )
 
         # Plots the model & saves it as a PNG file.
@@ -161,7 +166,9 @@ class Train(object):
             # Logs the saved model plot PNG file.
             mlflow.log_artifact(
                 "{}/model_plot.png".format(self.reports_directory_path),
-                "v{}".format(self.model_configuration["version"]),
+                "flair_abnormality_segmentation/v{}".format(
+                    self.model_configuration["version"]
+                ),
             )
 
     def initialize_metric_trackers(self) -> None:
@@ -427,7 +434,7 @@ class Train(object):
             batch_start_time = time.time()
 
             # Loads input & target batch images for file paths in current batch.
-            input_batch, target_batch = self.dataset.load_batch_input_target_images(
+            input_batch, target_batch = self.dataset.load_input_target_images(
                 list(image_file_paths.numpy()), list(mask_file_paths.numpy())
             )
 
@@ -675,7 +682,7 @@ class Train(object):
                 Return:
                     An integer for the number predicted by the model for the current image.
                 """
-                prediction = self.model([images], False, None)
+                prediction = self.model([images], training=False, masks=None)
                 return prediction
 
         # Exports trained tensorflow model as tensorflow module for serving.
@@ -725,3 +732,21 @@ class Train(object):
         ), "Shape does not match between the output from saved & loaded models."
         print("Finished serializing model & configuration files.")
         print()
+
+        # Logs serialized model as artifact.
+        mlflow.log_artifacts(
+            "{}/models/flair_abnormality_segmentation/v{}/serialized".format(
+                home_directory_path, self.model_version
+            ),
+            "flair_abnormality_segmentation/v{}/model".format(
+                self.model_configuration["version"]
+            ),
+        )
+
+        # Logs updated model configuration as artifact.
+        mlflow.log_dict(
+            self.model_configuration,
+            "flair_abnormality_segmentation/v{}/model_configuration.json".format(
+                self.model_version
+            ),
+        )
