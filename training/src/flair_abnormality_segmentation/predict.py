@@ -13,6 +13,8 @@ warnings.filterwarnings("ignore")
 
 import tensorflow as tf
 
+from src.utils import load_json_file
+
 
 class PredictMask(object):
     """Predicts mask for FLAIR abnormality in brain MRI images."""
@@ -33,3 +35,22 @@ class PredictMask(object):
 
         # Initalizes class variables.
         self.model_version = model_version
+
+    def load_model_configuration(self) -> None:
+        """Loads the model configuration file for model version.
+
+        Loads the model configuration file for model version.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        self.home_directory_path = os.getcwd()
+        model_configuration_directory_path = (
+            "{}/configs/flair_abnormality_segmentation".format(self.home_directory_path)
+        )
+        self.model_configuration = load_json_file(
+            "v{}".format(self.model_version), model_configuration_directory_path
+        )
