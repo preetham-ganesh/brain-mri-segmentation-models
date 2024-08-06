@@ -107,3 +107,31 @@ class PredictMask(object):
         model_input_image = np.float32(model_input_image)
         model_input_image = model_input_image / 255.0
         return model_input_image
+
+    def postprocess_prediction(self, prediction: np.ndarray) -> np.ndarray:
+        """Converts the prediction from the segmentation model output into an image.
+
+        Converts the prediction from the segmentation model output into an image.
+
+        Args:
+            prediction: A NumPy array for the prediction output from the model for the input image.
+
+        Returns:
+            A NumPy array for the processed version of prediction output.
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(
+            prediction, np.ndarray
+        ), "Variable prediction should be of type 'np.ndarray'."
+
+        # Removes 0th and 2nd dimension from the predicted image.
+        predicted_image = np.squeeze(prediction, axis=0)
+        predicted_image = np.squeeze(predicted_image, axis=-1)
+
+        # De-normalizes predicted image from [0, 1] to [0, 255], and type casts it to uint8.
+        predicted_image *= 255.0
+        predicted_image = predicted_image.astype(np.uint8)
+
+        # Thresholds the predicted image to convert into black & white image.
+        predicted_image = self.dataset.threshold_image(predicted_image)
+        return predicted_image
