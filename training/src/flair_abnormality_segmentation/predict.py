@@ -12,6 +12,7 @@ warnings.filterwarnings("ignore")
 
 
 import tensorflow as tf
+import numpy as np
 
 from src.utils import load_json_file
 from src.flair_abnormality_segmentation.dataset import Dataset
@@ -76,3 +77,33 @@ class PredictMask(object):
 
         # Initializes object for the Dataset class.
         self.dataset = Dataset(self.model_configuration)
+
+    def load_preprocess_input_image(self, image_file_path: str) -> np.ndarray:
+        """Loads & preprocesses image based on segmentation model requirements.
+
+        Loads & preprocesses image based on segmentation model requirements.
+
+        Args:
+            image_file_path: A string for the location of the image.
+
+        Returns:
+            A NumPy array for the processed image as input to the model.
+        """
+        # Asserts type & value of the arguments.
+        assert isinstance(
+            image_file_path, str
+        ), "Variable image_file_path should be of type 'str'."
+
+        # Loads the image for the current image path.
+        image = self.dataset.load_image(image_file_path)
+
+        # Thresholds image to have better distinction of regions in image.
+        thresholded_image = self.dataset.threshold_image(image)
+
+        # Adds an extra dimension to the image.
+        model_input_image = np.expand_dims(thresholded_image, axis=0)
+
+        # Casts input image to float32 and normalizes the image from [0, 255] range to [0, 1] range.
+        model_input_image = np.float32(model_input_image)
+        model_input_image = model_input_image / 255.0
+        return model_input_image
