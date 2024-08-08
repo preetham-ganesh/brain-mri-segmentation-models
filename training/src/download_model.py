@@ -32,9 +32,10 @@ def download_model_from_s3_bucket(
         None.
     """
     # Creates the absolute path for the directory path given in argument if it does not already exist.
-    serialized_model_directory_path = check_directory_path_existence(
-        "models/{}/v{}/model".format(model_name, model_version)
+    serialized_model_directory_path = "models/{}/v{}/model".format(
+        model_name, model_version
     )
+    _ = check_directory_path_existence(serialized_model_directory_path)
 
     # Initializes S3 client
     s3 = boto3.client("s3")
