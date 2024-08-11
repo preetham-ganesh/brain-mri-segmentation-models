@@ -10,9 +10,13 @@ COPY models/flair_abnormality_segmentation/v1.0.0 /models/flair_abnormality_segm
 # Copies configs/models.config to container.
 COPY configs/tf_serving/models.config /models/models.config
 
-# Expose the gRPC and REST API ports
-EXPOSE 8500
-EXPOSE 8501
+# Copies entrypoint shell file to container.
+COPY tf_serving_entrypoint.sh /usr/bin/tf_serving_entrypoint.sh
+
+# Adds permissions to the entrypoint shell file.
+RUN chmod +x /usr/bin/tf_serving_entrypoint.sh
+
+ENTRYPOINT []
 
 # Starts TensorFlow Serving when the container runs.
-CMD ["tensorflow_model_server", "--port=8500", "--rest_api_port=8501", "--model_config_file=/models/models.config"]
+CMD ["/usr/bin/tf_serving_entrypoint.sh"]
