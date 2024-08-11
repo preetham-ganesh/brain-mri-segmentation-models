@@ -1,5 +1,5 @@
 # Use the official TensorFlow Serving base image
-FROM tensorflow/serving
+FROM tensorflow/serving:2.8.0
 
 # Sets the working directory
 WORKDIR /
