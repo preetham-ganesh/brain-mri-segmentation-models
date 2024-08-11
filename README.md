@@ -25,3 +25,14 @@ Requires: [Pip](https://pypi.org/project/pip/)
 ```bash
 pip install --no-cache-dir -r requirements.txt
 ```
+
+## Usage
+
+Use the following commands to run the code files in the repo:
+
+Note: All code files should be executed in home directory.
+
+### Dataset
+
+- The data was downloaded from Kaggle - Brain MRI segmentation [[Link]](https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation).
+- After downloading the data, 'archive.zip' file should be saved in the following data directory path 'data/raw_data/'
