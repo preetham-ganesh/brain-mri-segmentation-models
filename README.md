@@ -4,10 +4,16 @@ This repository includes the code for training and serving deep learning models 
 
 ## Contents
 
+- [Related Repositories](https://github.com/preetham-ganesh/brain-mri-segmentation-models#related-repositories)
 - [Installation](https://github.com/preetham-ganesh/brain-mri-segmentation-models#installation)
 - [Usage](https://github.com/preetham-ganesh/brain-mri-segmentation-models#usage)
 - [Model Details](https://github.com/preetham-ganesh/brain-mri-segmentation-models#model-details)
 - [Releases](https://github.com/preetham-ganesh/brain-mri-segmentation-models#releases)
+- [Support](https://github.com/preetham-ganesh/brain-mri-segmentation-models#support)
+
+## Related Repositories
+
+- [Brain MRI Segmentation - App](https://github.com/preetham-ganesh/brain-mri-segmentation-app)
 
 ## Installation
 
@@ -88,3 +94,7 @@ Details about the latest releases, including key features, bug fixes, and any ot
 | Version | Release Date | Release Notes                                                                                            |
 | ------- | ------------ | -------------------------------------------------------------------------------------------------------- |
 | v1.0.0  | 08-12-2024   | Releases Training & Model Serving code (Sub-classing approach) for Flair Abnormality Segmentation model. |
+
+## Support
+
+For any queries regarding the repository please contact 'preetham.ganesh2021@gmail.com'.
