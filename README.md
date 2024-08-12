@@ -75,6 +75,16 @@ python3 src/download_model.py --mn flair_abnormality_segmentation --mv 1.0.0 --s
 
 ## Model Details
 
+Details of the model
+
 | Model name                     | Model Version | Description                                                                                                                                                             |
 | ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Flair Abnormality Segmentation | v1.0.0        | - A U-Net model with MobileNetV2 pretrained on ImageNet as Encoder, and custom layers as decoder. <br/> - Model was trained on Kaggle - Brain MRI segmentation dataset. |
+
+## Releases
+
+Details about the latest releases, including key features, bug fixes, and any other relevant information.
+
+| Version | Release Date | Release Notes                                                                                            |
+| ------- | ------------ | -------------------------------------------------------------------------------------------------------- |
+| v1.0.0  | 08-12-2024   | Releases Training & Model Serving code (Sub-classing approach) for Flair Abnormality Segmentation model. |
