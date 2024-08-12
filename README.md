@@ -6,7 +6,7 @@ This repository includes the code for training and serving deep learning models 
 
 - [Installation](https://github.com/preetham-ganesh/brain-mri-segmentation-models#installation)
 - [Usage](https://github.com/preetham-ganesh/brain-mri-segmentation-models#usage)
-- [Model Versions](https://github.com/preetham-ganesh/brain-mri-segmentation-models#model-versions)
+- [Model Details](https://github.com/preetham-ganesh/brain-mri-segmentation-models#model-details)
 - [Releases](https://github.com/preetham-ganesh/brain-mri-segmentation-models#releases)
 
 ## Installation
@@ -72,3 +72,9 @@ or
 ```bash
 python3 src/download_model.py --mn flair_abnormality_segmentation --mv 1.0.0 --s3bn <name> --s3adp <directory_path>
 ```
+
+## Model Details
+
+| Model name                     | Model Version | Description                                                                                                                                                             |
+| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flair Abnormality Segmentation | v1.0.0        | - A U-Net model with MobileNetV2 pretrained on ImageNet as Encoder, and custom layers as decoder. <br/> - Model was trained on Kaggle - Brain MRI segmentation dataset. |
