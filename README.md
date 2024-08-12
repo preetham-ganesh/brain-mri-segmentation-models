@@ -36,3 +36,39 @@ Note: All code files should be executed in home directory.
 
 - The data was downloaded from Kaggle - Brain MRI segmentation [[Link]](https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation).
 - After downloading the data, 'archive.zip' file should be saved in the following data directory path 'data/raw_data/'
+
+### Model Training & Testing
+
+```bash
+python3 src/flair_mri_segmentation/run.py --model_version 1.0.0 --set_tracking_uri <URI> --experiment_name flair_abnormality_segmentation
+```
+
+or
+
+```bash
+python3 src/flair_mri_segmentation/train.py -mv 1.0.0 -stu <URI> -en flair_abnormality_segmentation
+```
+
+### Predict
+
+```bash
+python3 src/flair_mri_segmentation/predict.py --model_version 1.0.0 --image_file_path <file_path>
+```
+
+or
+
+```bash
+python3 src/flair_mri_segmentation/predict.py -mv 1.0.0 --ifp <file_path>
+```
+
+### Download Model
+
+```bash
+python3 src/download_model.py --model_name flair_abnormality_segmentation --model_version 1.0.0 --s3_bucket_name <name> --s3_artifact_directory_path <directory_path>
+```
+
+or
+
+```bash
+python3 src/download_model.py --mn flair_abnormality_segmentation --mv 1.0.0 --s3bn <name> --s3adp <directory_path>
+```
