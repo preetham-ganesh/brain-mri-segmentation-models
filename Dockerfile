@@ -5,7 +5,7 @@ FROM tensorflow/serving:2.8.0
 WORKDIR /
 
 # Copies serialized model.
-COPY models/flair_abnormality_segmentation/v1.0.0 /models/flair_abnormality_segmentation_v1.0.0/1
+COPY models/flair_abnormality_segmentation/v1.0.0/model /models/flair_abnormality_segmentation_v1.0.0/1
 
 # Copies configs/models.config to container.
 COPY configs/tf_serving/models.config /models/models.config
