@@ -685,7 +685,7 @@ class Train(object):
                 Return:
                     An integer for the number predicted by the model for the current image.
                 """
-                prediction = self.model([images], training=False, masks=None)
+                prediction = self.model([images], training=False)
                 return prediction
 
         # Exports trained tensorflow model as tensorflow module for serving.
