@@ -646,6 +646,9 @@ class Train(object):
             self.model_configuration["model"]["n_channels"],
         ]
 
+        # Builds plottable graph for the model.
+        model = self.model.build_graph()
+
         class ExportModel(tf.Module):
             """Exports trained tensorflow model as tensorflow module for serving."""
 
@@ -686,7 +689,7 @@ class Train(object):
                 return prediction
 
         # Exports trained tensorflow model as tensorflow module for serving.
-        exported_model = ExportModel(self.model)
+        exported_model = ExportModel(model)
 
         # Predicts output for the sample input using the Exported model.
         output_0 = exported_model.predict(
